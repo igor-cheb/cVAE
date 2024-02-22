@@ -114,3 +114,18 @@ def one_hot(labels, class_size, device):
         targets[i, label-1] = 1
         # targets = torch.nn.functional.softmax(targets, dim=1)
     return targets.to(device)
+
+def original_and_generated_for_condition(max_condition: int, test_data:torch.Tensor, model:torch.nn.Module, latent_size:int, device):
+    """Yield original and generated data for each condition."""
+    for condition in range(1, max_condition+1):
+        # filter original data for the condition
+        original_for_condition = torch.stack(list(test_data_for_condition(test_data=test_data, 
+                                                condition=condition)))
+        sample_len = len(original_for_condition)
+
+        # generate data for the condition
+        encoded_condition = one_hot(torch.tensor([condition]).repeat(sample_len, 1), class_size=max_condition, device=device)
+        sample = torch.randn(sample_len, latent_size).to(device)
+        sample = model.decode(sample, encoded_condition).detach().cpu().view(-1, 12, 2)
+
+        yield (condition, original_for_condition, sample)
